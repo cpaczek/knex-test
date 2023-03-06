@@ -9,8 +9,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "knex": "^1.0.7",
+    "knex": "2.4.0",
     "lodash": "^4.17.21",
-    "pg": "^8.7.3"
+    "pg": "^8.7.3",
+    "sqlite3": "^5.1.4"
   }
 }
