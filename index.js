@@ -1,6 +1,8 @@
 // if commandline arg is "cockroachdb", use cockroachdb
 // else use sqlite3
 
+const { default: knex } = require("knex");
+
 const knex_sqlite = require("knex")({
   client: "sqlite3",
   connection: {
@@ -34,10 +36,13 @@ const knex_cockroach = require("knex")({
     Promise.all(arr.map((i) => addRows(i, knex_sqlite)));
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    console.log("cockroach");
-    await printRows(knex_cockroach);
     console.log("sqlite");
     await printRows(knex_sqlite);
+    console.log("cockroach");
+    await printRows(knex_cockroach);
+
+    knex_cockroach.destroy();
+    knex_sqlite.destroy();
 
     // Finally, add a catch statement
   } catch (e) {
@@ -69,8 +74,7 @@ async function addRows(blog_id, knex) {
       })
       .returning("id")
       .transacting(trx);
-
-    trx.commit();
+    await trx.commit();
   } catch (e) {
     console.log(e);
   }
@@ -90,5 +94,6 @@ async function createTable(knex) {
 
 async function printRows(knex) {
   const rows = await knex.select("*").from("knex_test");
-  console.log(rows.length);
+  // print the rows in a nice formatted table
+  console.table(rows);
 }
