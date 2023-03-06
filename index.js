@@ -32,12 +32,12 @@ const knex_cockroach = require("knex")({
     for (let i = 0; i < 100; i++) {
       arr.push(i.toString());
     }
-    Promise.all(arr.map((i) => addRows(i, knex_cockroach)));
-    Promise.all(arr.map((i) => addRows(i, knex_sqlite)));
+    await Promise.all(arr.map((i) => addRows(i, knex_cockroach)));
+    await Promise.all(arr.map((i) => addRows(i, knex_sqlite)));
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    console.log("sqlite");
-    await printRows(knex_sqlite);
+    // console.log("sqlite");
+    // await printRows(knex_sqlite);
     console.log("cockroach");
     await printRows(knex_cockroach);
 
