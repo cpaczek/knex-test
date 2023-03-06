@@ -1,66 +1,81 @@
-const knex = require('knex')({
-    client: 'cockroachdb',
+// if commandline arg is "cockroachdb", use cockroachdb
+// else use sqlite3
+let knex;
+if (process.argv[2] === "sqlite") {
+  console.log("Using sqlite3");
+  knex = require("knex")({
+    client: "sqlite3",
     connection: {
-        host : '127.0.0.1',
-        port : 26257,
-        user : 'root',
-        password : '',
-        database : 'knex'
+      filename: "./mydb.sqlite",
     },
-    debug: true
-});
-const {isNil, prop, omit, castArray} = require('lodash/fp');
-(async () => {
-try {
-    let object = {
-        name: 'id',
-        type: 'increments',
-        args: [ { primary: true, primaryKey: true } ],
-        defaultTo: null,
-        notNullable: true,
-        unsigned: false
-    }
-    // Create a table
-    await knex.schema
-        .createTable('knex_test', table => {
-            table.increments('id').notNullable();
-            table.string('user_name');
-        })
-        // ...and another
-
-    await knex.schema.alterTable('knex_test', table => {
-        createColumn(table, object).alter({ alterNullable: false, alterType: true });
-    })
-
-    // Finally, add a catch statement
-} catch(e) {
-    console.error(e);
+    debug: true,
+  });
+} else {
+  console.log("Using cockroachdb");
+  knex = require("knex")({
+    client: "cockroachdb",
+    connection: {
+      host: "127.0.0.1",
+      port: 26257,
+      user: "root",
+      password: "",
+      database: "knex",
+    },
+    debug: true,
+  });
 }
-})();
 
-const createColumn = (tableBuilder, column) => {
-    const { type, name, args = [], defaultTo, unsigned, notNullable } = column;
+useNullAsDefault: true,
+  (async () => {
+    try {
+      // check if table exists
+      const tableExists = await knex.schema.hasTable("knex_test");
+      tableExists ? await knex.schema.dropTable("knex_test") : null;
+      await knex.schema.createTable("knex_test", (table) => {
+        table.increments("id").notNullable();
+        table.integer("blog_id");
+        table.integer("comment_id");
+        table.integer("blog_order");
+        table.integer("comment_order");
+      });
 
-    const col = tableBuilder[type](name, ...args);
+      let arr = [];
+      for (let i = 0; i < 100; i++) {
+        arr.push(i.toString());
+      }
+      Promise.all(arr.map((i) => addRows(i)));
 
-    if (unsigned === true) {
-        col.unsigned();
+      // Finally, add a catch statement
+    } catch (e) {
+      console.error(e);
     }
-    //
-    if (!isNil(defaultTo)) {
-        const [value, opts] = castArray(defaultTo);
+  })();
 
-        if (prop('isRaw', opts)) {
-            col.defaultTo(db.connection.raw(value), omit('isRaw', opts));
-        } else {
-            col.defaultTo(value, opts);
-        }
-    }
-    if (notNullable === true) {
-        col.notNullable();
-    } else {
-        col.nullable();
-    }
+async function addRows(blog_id) {
+  const trx = await knex.transaction();
+  const maxResults = await knex
+    .select("comment_id")
+    .max("blog_order", { as: "max" })
+    .whereIn("comment_id", [1])
+    .where({})
+    .groupBy("comment_id")
+    .from("knex_test")
+    .transacting(trx);
 
-    return col;
-};
+  console.log("maxResults", maxResults);
+  const max = maxResults.length === 0 ? 0 : parseInt(maxResults[0].max) + 1;
+  console.log("max", max);
+
+  // copy the above insert query and run it using knex
+  await knex("knex_test")
+    .insert({
+      blog_id: blog_id,
+      blog_order: max,
+      comment_id: 1,
+      comment_order: 1,
+    })
+    .returning("id")
+    .transacting(trx);
+
+  trx.commit();
+}
