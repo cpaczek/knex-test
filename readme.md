@@ -13,10 +13,11 @@ docker exec -it roach-single ./cockroach sql --url="postgresql://root@127.0.0.1:
 
 Run the test
 
+Create a `knex` database. 
+
+This will run the same exact code on sqlite and cockroach db and print out the amount of rows that get added. As you will see only 12(ish) rows get added to cockroach db. whereas 100 rows get added to sqlite. 
+
+
 ```shell
-node ./index.js cockroachdb // run using cockroach db
-```
-    
-```shell
-node ./index.js sqlite // run using sqlite
+node ./index.js
 ```
