@@ -8,6 +8,7 @@ if (process.argv[2] === "sqlite") {
     connection: {
       filename: "./mydb.sqlite",
     },
+    useNullAsDefault: true,
     debug: true,
   });
 } else {
@@ -25,7 +26,7 @@ if (process.argv[2] === "sqlite") {
   });
 }
 
-useNullAsDefault: true,
+
   (async () => {
     try {
       // check if table exists
