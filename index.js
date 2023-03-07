@@ -12,12 +12,13 @@ const knex_sqlite = require("knex")({
   debug: false,
 });
 const knex_cockroach = require("knex")({
-  client: "cockroachdb",
+  client: "pg",
+  version: "9.6",
   connection: {
     host: "127.0.0.1",
-    port: 26257,
-    user: "root",
-    password: "",
+    port: 5432,
+    user: "postgres",
+    password: "postgres",
     database: "knex",
   },
   debug: false,
@@ -36,48 +37,42 @@ const knex_cockroach = require("knex")({
     await Promise.all(arr.map((i) => addRows(i, knex_sqlite)));
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    // console.log("sqlite");
-    // await printRows(knex_sqlite);
+    console.log("sqlite");
+    await printRows(knex_sqlite);
     console.log("cockroach");
     await printRows(knex_cockroach);
 
-    knex_cockroach.destroy();
-    knex_sqlite.destroy();
-
-    // Finally, add a catch statement
+    await knex_cockroach.destroy();
+    await knex_sqlite.destroy();
   } catch (e) {
     console.error(e);
   }
 })();
 
 async function addRows(blog_id, knex) {
-  try {
-    const trx = await knex.transaction();
-    const maxResults = await knex
-      .select("comment_id")
-      .max("blog_order", { as: "max" })
-      .whereIn("comment_id", [1])
-      .where({})
-      .groupBy("comment_id")
-      .from("knex_test")
-      .transacting(trx);
+  const trx = await knex.transaction();
+  const maxResults = await knex
+    .select("comment_id")
+    .max("blog_order", { as: "max" })
+    .whereIn("comment_id", [1])
+    .where({})
+    .groupBy("comment_id")
+    .from("knex_test")
+    .transacting(trx);
 
-    const max = maxResults.length === 0 ? 0 : parseInt(maxResults[0].max) + 1;
+  const max = maxResults.length === 0 ? 0 : parseInt(maxResults[0].max) + 1;
 
-    // copy the above insert query and run it using knex
-    await knex("knex_test")
-      .insert({
-        blog_id: blog_id,
-        blog_order: max,
-        comment_id: 1,
-        comment_order: 1,
-      })
-      .returning("id")
-      .transacting(trx);
-    await trx.commit();
-  } catch (e) {
-    console.log(e);
-  }
+  // copy the above insert query and run it using knex
+  await knex("knex_test")
+    .insert({
+      blog_id: blog_id,
+      blog_order: max,
+      comment_id: 1,
+      comment_order: 1,
+    })
+    .returning("id")
+    .transacting(trx);
+  await trx.commit();
 }
 
 async function createTable(knex) {

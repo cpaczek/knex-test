@@ -1,0 +1,19 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: knex
+      POSTGRES_OPTIONS: -c max_prepared_transactions=100 -c max_locks_per_transaction=256 -c max_connections=300
+    command: postgres -c max_prepared_transactions=100 -c max_locks_per_transaction=256 -c max_connections=300 -c default_transaction_isolation=serializable
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+  
+volumes:
+  db-data:
